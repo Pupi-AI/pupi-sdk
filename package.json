@@ -1,0 +1,32 @@
+{
+  "name": "pupi-sdk",
+  "version": "1.0.0",
+  "description": "Puppeteer SDK for Pupi AI - Execute AI-generated steps with browser automation",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "pupi",
+    "puppeteer",
+    "automation",
+    "browser",
+    "ai",
+    "sdk"
+  ],
+  "author": "PupiAI",
+  "license": "ISC",
+  "dependencies": {
+    "@xenova/transformers": "^2.17.2",
+    "node-fetch": "^2.7.0",
+    "puppeteer": "^23.1.1",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.15"
+  }
+}
