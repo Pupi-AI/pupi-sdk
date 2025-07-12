@@ -11,6 +11,8 @@ import PupiPuppeteerSDK from '../src/index.js';
 async function formSubmissionExample() {
   console.log('🚀 Starting form submission example with initial steps...');
 
+  // For local development, explicitly set the API URL to localhost.
+  // The SDK default is 'https://api.pupiai.com'.
   const sdk = new PupiPuppeteerSDK('http://localhost:4000');
   sdk.setAccessToken('0acec170-3610-4f35-b385-7f406dee8023');
 

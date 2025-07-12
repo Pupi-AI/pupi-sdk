@@ -11,11 +11,11 @@ new PupiPuppeteerSDK(apiBaseUrl?: string)
 ```
 
 **Parameters:**
-- `apiBaseUrl` (string, optional): Pupi AI API'nin base URL'i. Default: `'http://localhost:4000'`
+- `apiBaseUrl` (string, optional): Pupi AI API'nin base URL'i. Default: `'https://api.pupiai.com'`
 
 **Example:**
 ```javascript
-const sdk = new PupiPuppeteerSDK('https://api.pupi.ai');
+const sdk = new PupiPuppeteerSDK('https://api.pupiai.com');
 ```
 
 ### Methods
@@ -32,14 +32,17 @@ API istekleri için access token'ı ayarlar.
 sdk.setAccessToken('your-secret-token');
 ```
 
-#### `executeStepsLocally(steps)`
+#### `executeStepsLocally(steps, options)`
 
-Step array'ini yerel olarak execute eder. Bu metod, her çağrıldığında geçici bir browser instance'ı oluşturur ve işlem bitince kapatır.
+Step array'ini yerel olarak execute eder. Bu metod, her çağrıldığında bir browser instance'ı oluşturur ve bu instance'ı açık bırakır. Instance'ı kapatmak için `closeAllInstances()` veya `puppeteerManager.close(instanceId)` kullanılmalıdır.
 
 **Parameters:**
-- `steps` (Array): Execute edilecek step'ler
+- `steps` (Array): Execute edilecek step'ler.
+- `options` (Object, optional): Ek seçenekler.
+  - `params` (Object, optional): Step'ler içindeki `{{...}}` değişkenlerini değiştirmek için kullanılır.
+  - `launchOptions` (Object, optional): Puppeteer için launch seçenekleri (örn: `{ headless: false }`).
 
-**Returns:** `Promise<any>` - Son action'ın sonucu
+**Returns:** `Promise<Object>` - `{ result: any, instanceId: string }` içeren bir obje. `result` son action'ın sonucudur, `instanceId` ise oluşturulan browser instance'ının ID'sidir.
 
 **Example:**
 ```javascript
@@ -48,7 +51,16 @@ const steps = [
   { action: 'screenshot', options: { type: 'png' } }
 ];
 
-const result = await sdk.executeStepsLocally(steps);
+try {
+  const { result, instanceId } = await sdk.executeStepsLocally(steps, {
+    launchOptions: { headless: false }
+  });
+  console.log('Screenshot taken:', Buffer.isBuffer(result));
+  console.log('Instance ID:', instanceId);
+} finally {
+  // Instance'ı kapatmayı unutmayın
+  await sdk.closeAllInstances();
+}
 ```
 
 #### `sendPromptToAI(prompt, options)`

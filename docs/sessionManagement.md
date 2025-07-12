@@ -8,23 +8,33 @@ When you run automations locally, the SDK handles browser instances automaticall
 
 ### `executeStepsLocally`
 
-Each call to `sdk.executeStepsLocally(steps)` is self-contained:
-1. A new browser instance is created.
-2. The steps are executed.
-3. The browser instance is closed.
+Each call to `sdk.executeStepsLocally(steps)` creates a new browser instance that **remains open** after the steps are executed. This is useful for debugging or inspecting the final state of the page.
 
-This makes it easy to run multiple automations in parallel without conflicts.
+1.  A new browser instance is created.
+2.  The steps are executed.
+3.  The instance ID is returned, and the browser stays open.
+
+Because the instance is not closed automatically, you are responsible for cleanup. You can use the returned `instanceId` to close a specific instance or call `sdk.closeAllInstances()` to terminate all of them.
 
 ```javascript
 import PupiPuppeteerSDK from 'pupi-sdk';
 
 const sdk = new PupiPuppeteerSDK();
 
-// These two calls will run in separate, isolated browser instances.
-const task1 = sdk.executeStepsLocally(steps1);
-const task2 = sdk.executeStepsLocally(steps2);
+try {
+  // This call will leave a browser instance running.
+  const { instanceId } = await sdk.executeStepsLocally(steps1);
+  console.log(`Instance ${instanceId} is running.`);
 
-const [result1, result2] = await Promise.all([task1, task2]);
+  // You can run another one in parallel.
+  const { instanceId: instanceId2 } = await sdk.executeStepsLocally(steps2);
+  console.log(`Instance ${instanceId2} is also running.`);
+
+} finally {
+  // It's crucial to close all instances at the end.
+  await sdk.closeAllInstances();
+  console.log("All local instances closed.");
+}
 ```
 
 ### `Puppeteer` Class

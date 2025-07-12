@@ -22,12 +22,26 @@ const steps = [
   { action: 'screenshot', options: { type: 'png' } }
 ];
 
-// The SDK automatically creates and closes a browser instance for this execution.
-const result = await sdk.executeStepsLocally(steps);
-console.log('Screenshot taken:', Buffer.isBuffer(result));
+// The SDK creates a browser instance that remains open after execution.
+// It's crucial to close it in a `finally` block.
+try {
+  const { result, instanceId } = await sdk.executeStepsLocally(steps, {
+    launchOptions: { headless: false } // Run in non-headless mode
+  });
 
-// Clean up any other stray instances, just in case.
-await sdk.closeAllInstances();
+  console.log('Screenshot taken:', Buffer.isBuffer(result));
+  console.log(`Browser instance ${instanceId} is open. It will be closed shortly.`);
+  
+  // Add a small delay to see the browser window
+  await new Promise(resolve => setTimeout(resolve, 5000));
+
+} catch (error) {
+  console.error('Automation failed:', error);
+} finally {
+  // Always clean up instances to prevent lingering processes.
+  await sdk.closeAllInstances();
+  console.log('All instances closed.');
+}
 ```
 
 ### 2. Advanced Fluent API
@@ -98,8 +112,8 @@ const [googleResult, facebookResult] = await Promise.all([
   facebookTask
 ]);
 
-console.log('Google content length:', googleResult.content?.length);
-console.log('Facebook screenshot taken:', Buffer.isBuffer(facebookResult));
+console.log('Google content length:', googleResult.result.content?.length);
+console.log('Facebook screenshot taken:', Buffer.isBuffer(facebookResult.result));
 ```
 
 ## Error Handling
@@ -113,7 +127,7 @@ try {
     { action: 'click', selector: '#non-existent-button' } // This will cause an error
   ];
   
-  const result = await sdk.executeStepsLocally(steps);
+  const { result } = await sdk.executeStepsLocally(steps);
   console.log('Success:', result);
   
 } catch (error) {
@@ -184,7 +198,7 @@ const scrapingSteps = [
   ` }
 ];
 
-const articles = await sdk.executeStepsLocally(scrapingSteps);
+const { result: articles } = await sdk.executeStepsLocally(scrapingSteps);
 console.log('Scraped articles:', articles);
 ```
 
@@ -202,6 +216,6 @@ const formTestSteps = [
   { action: 'getText', selector: '.success-message' }
 ];
 
-const result = await sdk.executeStepsLocally(formTestSteps);
+const { result } = await sdk.executeStepsLocally(formTestSteps);
 console.log('Form submission result:', result);
 ```

@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 
 class ApiClient {
-  constructor(baseUrl = 'http://localhost:4000') {
+  constructor(baseUrl = 'https://api.pupiai.com') {
     this.baseUrl = baseUrl;
     this.accessToken = null;
   }

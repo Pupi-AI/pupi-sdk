@@ -1,6 +1,6 @@
 {
   "name": "pupi-sdk",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Puppeteer SDK for Pupi AI - Execute AI-generated steps with browser automation",
   "main": "src/index.js",
   "type": "module",

@@ -49,10 +49,15 @@ async function aiWebScrapingExample() {
 
     // --- Step 2: Execute the AI-generated steps locally ---
     console.log('\n🔄 Executing AI-generated steps locally...');
-    const extractedData = await sdk.executeStepsLocally(stepsToExecute);
+    // The browser will remain open after execution for inspection.
+    const { result: extractedData, instanceId } = await sdk.executeStepsLocally(stepsToExecute, {
+      launchOptions: { headless: false }
+    });
     
     console.log('\n✅ Local execution finished!');
-    console.log('📦 Extracted Data:', extractedData);
+    console.log(`📦 Extracted Data (from instance ${instanceId}):`, extractedData);
+    console.log('ℹ️ Browser will be closed in 5 seconds...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
 
   } catch (error) {
     console.error('❌ An error occurred during the web scraping example:', error.message);
