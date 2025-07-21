@@ -71,7 +71,7 @@ class Puppeteer {
 
   /**
    * Clicks an element matching the selector.
-   * @param {{ selector: string, options?: ClickOptions, enum?: string }} params - The selector for the element to click, optional click parameters, and enum category.
+   * @param {{ selector: string, options?: ClickOptions, enum?: string }} params - The JSPath or XPath selector for the element to click, optional click parameters, and enum category.
    * @returns {this}
    */
   click = ({ selector, options, enum: enumValue }) => {
@@ -91,7 +91,7 @@ class Puppeteer {
 
   /**
    * Types text into an element matching the selector.
-   * @param {{ selector: string, value: string, options?: { }, enum?: string }} params - The selector, the text to type, optional typing parameters, and enum category.
+   * @param {{ selector: string, value: string, options?: { }, enum?: string }} params - The JSPath or XPath selector, the text to type, optional typing parameters, and enum category.
    * @returns {this}
    */
   write = ({ selector, value, options, enum: enumValue }) => {
@@ -101,7 +101,7 @@ class Puppeteer {
 
   /**
    * Clears the value of an input element.
-   * @param {{ selector: string, enum?: string }} params - The selector for the input element to clear and enum category.
+   * @param {{ selector: string, enum?: string }} params - The JSPath or XPath selector for the input element to clear and enum category.
    * @returns {this}
    */
   clearInput = ({ selector, enum: enumValue }) => {
@@ -111,7 +111,7 @@ class Puppeteer {
 
   /**
    * Hovers over an element matching the selector.
-   * @param {{ selector: string, enum?: string }} params - The selector for the element to hover over and enum category.
+   * @param {{ selector: string, enum?: string }} params - The JSPath or XPath selector for the element to hover over and enum category.
    * @returns {this}
    */
   hover = ({ selector, enum: enumValue }) => {
@@ -121,7 +121,7 @@ class Puppeteer {
 
   /**
    * Focuses on an element matching the selector.
-   * @param {{ selector: string, enum?: string }} params - The selector for the element to focus on and enum category.
+   * @param {{ selector: string, enum?: string }} params - The JSPath or XPath selector for the element to focus on and enum category.
    * @returns {this}
    */
   focus = ({ selector, enum: enumValue }) => {
@@ -131,7 +131,7 @@ class Puppeteer {
 
   /**
    * Selects options in a <select> element.
-   * @param {{ selector: string, values: string[], enum?: string }} params - The selector for the <select> element, an array of option values to select, and enum category.
+   * @param {{ selector: string, values: string[], enum?: string }} params - The JSPath or XPath selector for the <select> element, an array of option values to select, and enum category.
    * @returns {this}
    */
   select = ({ selector, values, enum: enumValue }) => {
@@ -141,7 +141,7 @@ class Puppeteer {
 
   /**
    * Uploads files to an input[type=file] element.
-   * @param {{ selector: string, filePaths: string[], enum?: string }} params - The selector for the file input, an array of file paths to upload, and enum category.
+   * @param {{ selector: string, filePaths: string[], enum?: string }} params - The JSPath or XPath selector for the file input, an array of file paths to upload, and enum category.
    * @returns {this}
    */
   uploadFile = ({ selector, filePaths, enum: enumValue }) => {
@@ -163,7 +163,7 @@ class Puppeteer {
 
   /**
    * Waits for an element matching the selector to appear in the DOM.
-   * @param {{ selector: string, options?: WaitForSelectorOptions, enum?: string }} params - The selector to wait for, optional wait parameters, and enum category.
+   * @param {{ selector: string, options?: WaitForSelectorOptions, enum?: string }} params - The JSPath or XPath selector to wait for, optional wait parameters, and enum category.
    * @returns {this}
    */
   waitForSelector = ({ selector, options, enum: enumValue }) => {
@@ -285,15 +285,6 @@ class Puppeteer {
     return this;
   };
 
-  /**
-   * Gets the full HTML content of the page. The result will be the last returned value from run().
-   * @param {{ enum?: string }} [params={}] - Optional enum category.
-   * @returns {this}
-   */
-  getContent = ({ enum: enumValue } = {}) => {
-    this.actions.push({ type: "getContent", payload: {}, enum: enumValue });
-    return this;
-  };
 
   /**
    * Gets the inner HTML of the `<body>` element. The result will be the last returned value from run().
@@ -307,7 +298,7 @@ class Puppeteer {
 
   /**
    * Gets the inner HTML of an element matching the selector. The result will be the last returned value from run().
-   * @param {{ selector: string, enum?: string }} params - The selector for the element and enum category.
+   * @param {{ selector: string, enum?: string }} params - The JSPath or XPath selector for the element and enum category.
    * @returns {this}
    */
   getHtml = ({ selector, enum: enumValue }) => {
@@ -317,7 +308,7 @@ class Puppeteer {
 
   /**
    * Gets the inner text of an element matching the selector. The result will be the last returned value from run().
-   * @param {{ selector: string, enum?: string }} params - The selector for the element and enum category.
+   * @param {{ selector: string, enum?: string }} params - The JSPath or XPath selector for the element and enum category.
    * @returns {this}
    */
   getText = ({ selector, enum: enumValue }) => {
@@ -327,7 +318,7 @@ class Puppeteer {
 
   /**
    * Gets an attribute's value from an element. The result will be the last returned value from run().
-   * @param {{ selector: string, attribute: string, enum?: string }} params - The selector, the attribute name, and enum category.
+   * @param {{ selector: string, attribute: string, enum?: string }} params - The JSPath or XPath selector, the attribute name, and enum category.
    * @returns {this}
    */
   getAttribute = ({ selector, attribute, enum: enumValue }) => {
@@ -337,7 +328,7 @@ class Puppeteer {
 
   /**
    * Gets the `value` property of an input element. The result will be the last returned value from run().
-   * @param {{ selector: string, enum?: string }} params - The selector for the input element and enum category.
+   * @param {{ selector: string, enum?: string }} params - The JSPath or XPath selector for the input element and enum category.
    * @returns {this}
    */
   getValue = ({ selector, enum: enumValue }) => {
@@ -375,6 +366,20 @@ class Puppeteer {
     return this;
   };
 
+  /**
+   * Detects non-interactive elements (containers, panels, sections) using AI vision.
+   * @param {{ prompt: string, enum?: string }} params - Detection parameters.
+   * @returns {this}
+   */
+  detectNonInteractiveItemsWithAI = ({ prompt, enum: enumValue } = {}) => {
+    this.actions.push({ 
+      type: "detectNonInteractiveItemsWithAI", 
+      payload: { prompt }, 
+      enum: enumValue 
+    });
+    return this;
+  };
+
   // --- Execution ---
 
   /**
@@ -384,8 +389,6 @@ class Puppeteer {
   run = async () => {
     let instance = puppeteerManager.get(this.id);
     if (!instance) {
-      // Auto-create the instance if it doesn't exist
-      console.log(`Creating missing Puppeteer instance ${this.id}`);
       instance = await puppeteerManager.create(this.id, this.options.launchOptions);
     }
     const { page } = instance;

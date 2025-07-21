@@ -1,25 +1,25 @@
 # Pupi Puppeteer SDK
 
-Node.js tabanlı browser automation SDK'sı. AI tarafından üretilen automation step'leri yerel olarak çalıştırabilir ve Pupi AI API'si ile entegre çalışabilir.
+Node.js-based browser automation SDK. Execute AI-generated automation steps locally and integrate seamlessly with the Pupi AI API.
 
-## ✨ Özellikler
+## ✨ Features
 
-- **🏠 Yerel Çalıştırma**: Automation step'leri doğrudan bilgisayarınızda çalıştırın
-- **🤖 AI Entegrasyonu**: Pupi AI API'si ile sorunsuz entegrasyon
-- **🎯 Otomatik Session Yönetimi**: Browser instance'ları otomatik olarak yönetilir
-- **🔍 Element Detection**: Güçlü element tespit sistemi (React, Vue, Angular destekli)
-- **⚡ Fluent API**: Kolay kullanım için zincirleme metodlar
-- **🛡️ Stealth Mode**: Anti-detection özellikler
+- **🏠 Local Execution**: Run automation steps directly on your computer
+- **🤖 AI Integration**: Seamless integration with Pupi AI API
+- **🎯 Automatic Session Management**: Browser instances are managed automatically
+- **🔍 Element Detection**: Powerful element detection system (React, Vue, Angular supported)
+- **⚡ Fluent API**: Chainable methods for easy usage
+- **🛡️ Stealth Mode**: Anti-detection features
 
-## 📦 Kurulum
+## 📦 Installation
 
 ```bash
 npm install pupi-sdk
 ```
 
-## 🚀 Hızlı Başlangıç
+## 🚀 Quick Start
 
-### Basit Yerel Otomasyon
+### Simple Local Automation
 
 ```javascript
 import PupiPuppeteerSDK from 'pupi-sdk';
@@ -28,44 +28,45 @@ const sdk = new PupiPuppeteerSDK();
 
 const steps = [
   { action: 'navigate', url: 'https://example.com' },
+  { action: 'waitForSelector', selector: "//h1" },
   { action: 'screenshot', options: { type: 'png' } }
 ];
 
-// SDK, browser instance'ını otomatik olarak oluşturur ve kapatır.
+// SDK automatically creates and manages browser instances
 const result = await sdk.executeStepsLocally(steps);
-await sdk.closeAllInstances(); // Kalan tüm instance'ları temizler
+await sdk.closeAllInstances(); // Clean up all remaining instances
 ```
 
-### Gelişmiş Fluent API
+### Advanced Fluent API
 
 ```javascript
 import { Puppeteer } from 'pupi-sdk';
 
-// ID belirtmeye gerek yok, SDK otomatik yönetir
+// No need to specify IDs, SDK manages automatically
 const result = await new Puppeteer()
   .go({ url: 'https://example.com' })
-  .waitForSelector({ selector: 'h1' })
+  .waitForSelector({ selector: "//h1" })
   .screenshot({ options: { fullPage: true } })
   .run();
 ```
 
-## 📚 Dokümantasyon
+## 📚 Documentation
 
-- **[🚀 Getting Started](./docs/gettingStarted.md)** - Başlangıç rehberi ve temel kullanım
-- **[📖 API Reference](./docs/apiReference.md)** - Tüm metodların detaylı açıklamaları  
-- **[⚡ Step Actions](./docs/stepActions.md)** - Kullanılabilir tüm action'ların listesi
-- **[🎯 Session Management](./docs/sessionManagement.md)** - Session yönetimi ve best practices
+- **[🚀 Getting Started](./docs/gettingStarted.md)** - Beginner's guide and basic usage
+- **[📖 API Reference](./docs/apiReference.md)** - Detailed descriptions of all methods
+- **[⚡ Step Actions](./docs/stepActions.md)** - List of all available actions
+- **[🎯 Session Management](./docs/sessionManagement.md)** - Session management and best practices
 
-## 💡 Temel Örnekler
+## 💡 Basic Examples
 
-### Paralel Yerel Otomasyon
+### Parallel Local Automation
 
 ```javascript
 import PupiPuppeteerSDK from 'pupi-sdk';
 
 const sdk = new PupiPuppeteerSDK();
 
-// Her `executeStepsLocally` çağrısı kendi izole browser instance'ında çalışır
+// Each `executeStepsLocally` call runs in its own isolated browser instance
 const googleTask = sdk.executeStepsLocally([
   { action: 'navigate', url: 'https://google.com' },
   { action: 'screenshot' }
@@ -73,43 +74,43 @@ const googleTask = sdk.executeStepsLocally([
 
 const githubTask = sdk.executeStepsLocally([
   { action: 'navigate', url: 'https://github.com' },
-  { action: 'getContent' }
+  { action: 'getBodyContent' }
 ]);
 
-// Paralel çalıştırma
+// Parallel execution
 const [googleResult, githubResult] = await Promise.all([
   googleTask,
   githubTask
 ]);
 ```
 
-### AI Entegrasyonu
+### AI Integration
 
 ```javascript
 const sdk = new PupiPuppeteerSDK('https://your-pupi-api.com');
 sdk.setAccessToken('your-access-token-here');
 
-// AI'ya Türkçe prompt gönderebilirsiniz
+// You can send prompts in any language
 const result = await sdk.sendPromptToAI(
-  "Google'a git ve 'puppeteer tutorial' ara"
+  "Go to Google and search for 'puppeteer tutorial'"
 );
 
-// Session sonuçlarını kontrol edin
+// Check session results
 const sessionId = result.data.sessionId;
 const sessionResult = await sdk.getSessionResult(sessionId);
 ```
 
-### Form Otomasyonu
+### Form Automation
 
 ```javascript
 const formSteps = [
   { action: 'navigate', url: 'https://example.com/form' },
-  { action: 'write', selector: '#email', value: 'test@example.com' },
-  { action: 'write', selector: '#password', value: 'secure123' },
-  { action: 'select', selector: '#country', values: ['turkey'] },
-  { action: 'click', selector: '#submit' },
+  { action: 'write', selector: "document.getElementById('email')", value: 'test@example.com' },
+  { action: 'write', selector: "document.getElementById('password')", value: 'secure123' },
+  { action: 'select', selector: "document.getElementById('country')", values: ['turkey'] },
+  { action: 'click', selector: "//button[@type='submit']" },
   { action: 'waitForNavigation' },
-  { action: 'getText', selector: '.success-message' }
+  { action: 'getText', selector: "//div[contains(@class, 'success-message')]" }
 ];
 
 const result = await sdk.executeStepsLocally(formSteps);
@@ -159,7 +160,6 @@ Advanced browser automation class with fluent API.
 - `sleep({ duration })` - Wait for specific duration
 
 #### Data Extraction Methods
-- `getContent()` - Get full page HTML
 - `getBodyContent()` - Get body HTML with interactive elements
 - `getText({ selector })` - Get element text
 - `getAttribute({ selector, attribute })` - Get element attribute
@@ -187,7 +187,7 @@ Steps support comprehensive browser automation actions:
           'sleep' | 'waitForSelector' | 'waitForNavigation' | 
           'waitForFunction' | 'waitForDomUpdate' | 'screenshot' | 'pdf' | 
           'setViewport' | 'setUserAgent' | 'setCookies' | 'deleteCookies' | 
-          'bringToFront' | 'evaluate' | 'getContent' | 'getBodyContent' | 
+          'bringToFront' | 'evaluate' | 'getBodyContent' | 
           'getHtml' | 'getText' | 'getAttribute' | 'getValue' | 'getCookies' | 
           'getClickableElements' | 'getWriteableElements',
 
@@ -195,7 +195,7 @@ Steps support comprehensive browser automation actions:
   url?: string,                    // for navigate, go
   
   // Interaction properties  
-  selector?: string,               // for element-based actions
+  selector?: string,               // for element-based actions. MUST be a JSPath or XPath string (e.g., "document.getElementById('my-id')" or "//button[@data-testid='submit']").
   value?: string,                  // for type, write
   key?: string,                    // for press
   values?: string[],               // for select
@@ -257,24 +257,24 @@ try {
     console.log('Element not found or page load timeout');
   }
 } finally {
-  await sdk.closeAllInstances(); // Her zaman cleanup
+  await sdk.closeAllInstances(); // Always cleanup
 }
 ```
 
-## 🤝 Katkıda Bulunma
+## 🤝 Contributing
 
-1. Projeyi fork edin
-2. Feature branch oluşturun (`git checkout -b feature/amazing-feature`)
-3. Değişikliklerinizi commit edin (`git commit -m 'Add amazing feature'`)
-4. Branch'inizi push edin (`git push origin feature/amazing-feature`)
-5. Pull Request açın
+1. Fork the project
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## 📄 Lisans
+## 📄 License
 
 ISC
 
-## 🆘 Destek
+## 🆘 Support
 
 - **Issues**: [GitHub Issues](https://github.com/pupi-ai/pupi-sdk/issues)
-- **Documentation**: [/docs klasörü](./docs/)
-- **Examples**: [/examples klasörü](./examples/)
+- **Documentation**: [/docs directory](./docs/)
+- **Examples**: [/examples directory](./examples/)

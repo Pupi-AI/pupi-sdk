@@ -2,7 +2,7 @@
 
 ## PupiPuppeteerSDK Class
 
-Ana SDK sınıfı. Browser automation ve AI entegrasyonu için kullanılır.
+Main SDK class used for browser automation and AI integration.
 
 ### Constructor
 
@@ -11,7 +11,7 @@ new PupiPuppeteerSDK(apiBaseUrl?: string)
 ```
 
 **Parameters:**
-- `apiBaseUrl` (string, optional): Pupi AI API'nin base URL'i. Default: `'https://api.pupiai.com'`
+- `apiBaseUrl` (string, optional): Base URL for the Pupi AI API. Default: `'https://api.pupiai.com'`
 
 **Example:**
 ```javascript
@@ -22,7 +22,7 @@ const sdk = new PupiPuppeteerSDK('https://api.pupiai.com');
 
 #### `setAccessToken(token)`
 
-API istekleri için access token'ı ayarlar.
+Sets the access token for API requests.
 
 **Parameters:**
 - `token` (string): API access token
@@ -34,15 +34,15 @@ sdk.setAccessToken('your-secret-token');
 
 #### `executeStepsLocally(steps, options)`
 
-Step array'ini yerel olarak execute eder. Bu metod, her çağrıldığında bir browser instance'ı oluşturur ve bu instance'ı açık bırakır. Instance'ı kapatmak için `closeAllInstances()` veya `puppeteerManager.close(instanceId)` kullanılmalıdır.
+Executes a step array locally. This method creates a browser instance with each call and keeps it open. To close the instance, use `closeAllInstances()` or `puppeteerManager.close(instanceId)`.
 
 **Parameters:**
-- `steps` (Array): Execute edilecek step'ler.
-- `options` (Object, optional): Ek seçenekler.
-  - `params` (Object, optional): Step'ler içindeki `{{...}}` değişkenlerini değiştirmek için kullanılır.
-  - `launchOptions` (Object, optional): Puppeteer için launch seçenekleri (örn: `{ headless: false }`).
+- `steps` (Array): Steps to execute.
+- `options` (Object, optional): Additional options.
+  - `params` (Object, optional): Used to replace `{{...}}` variables within steps.
+  - `launchOptions` (Object, optional): Launch options for Puppeteer (e.g., `{ headless: false }`).
 
-**Returns:** `Promise<Object>` - `{ result: any, instanceId: string }` içeren bir obje. `result` son action'ın sonucudur, `instanceId` ise oluşturulan browser instance'ının ID'sidir.
+**Returns:** `Promise<Object>` - An object containing `{ result: any, instanceId: string }`. `result` is the result of the last action, `instanceId` is the ID of the created browser instance.
 
 **Example:**
 ```javascript
@@ -58,18 +58,18 @@ try {
   console.log('Screenshot taken:', Buffer.isBuffer(result));
   console.log('Instance ID:', instanceId);
 } finally {
-  // Instance'ı kapatmayı unutmayın
+  // Don't forget to close the instance
   await sdk.closeAllInstances();
 }
 ```
 
 #### `sendPromptToAI(prompt, options)`
 
-AI'ya otomasyon için prompt gönderir.
+Sends a prompt to AI for automation.
 
 **Parameters:**
-- `prompt` (string): AI için task açıklaması
-- `options` (Object, optional): Ek seçenekler (örn: `params`, `enums`)
+- `prompt` (string): Task description for AI
+- `options` (Object, optional): Additional options (e.g., `params`, `enums`)
 
 **Returns:** `Promise<Object>` - AI response
 
@@ -83,37 +83,37 @@ const result = await sdk.sendPromptToAI(
 
 #### `getSessionResult(sessionId)`
 
-Bir API session'ının sonuçlarını getirir.
+Retrieves results from an API session.
 
 **Parameters:**
-- `sessionId` (string): Sonuçları alınacak Session ID
+- `sessionId` (string): Session ID to get results from
 
-**Returns:** `Promise<Object>` - Session sonuçları
+**Returns:** `Promise<Object>` - Session results
 
 #### `closeSession(sessionId)`
 
-Bir API session'ını kapatır.
+Closes an API session.
 
 **Parameters:**
-- `sessionId` (string): Kapatılacak Session ID
+- `sessionId` (string): Session ID to close
 
 **Returns:** `Promise<Object>`
 
 #### `getActiveSessions()`
 
-API üzerindeki tüm aktif session'ları listeler.
+Lists all active sessions on the API.
 
 **Returns:** `Promise<Object>`
 
 #### `closeAllSessions()`
 
-API üzerindeki tüm aktif session'ları kapatır.
+Closes all active sessions on the API.
 
 **Returns:** `Promise<Object>`
 
 #### `closeAllInstances()`
 
-SDK tarafından oluşturulan tüm yerel browser instance'larını kapatır.
+Closes all local browser instances created by the SDK.
 
 **Returns:** `Promise<void>`
 
@@ -121,7 +121,7 @@ SDK tarafından oluşturulan tüm yerel browser instance'larını kapatır.
 
 ## Puppeteer Class
 
-Advanced browser automation için fluent (zincirleme) API sağlar. Bu sınıf, tek bir browser instance'ını yönetir.
+Provides a fluent (chaining) API for advanced browser automation. This class manages a single browser instance.
 
 ### Constructor
 
@@ -130,104 +130,116 @@ new Puppeteer({ launchOptions })
 ```
 
 **Parameters:**
-- `launchOptions` (Object, optional): Puppeteer launch seçenekleri
+- `launchOptions` (Object, optional): Puppeteer launch options
 
 ### Navigation Methods
 
 #### `go({ url, options })`
 
-Belirtilen URL'e gider.
+Navigates to the specified URL.
 
 **Parameters:**
-- `url` (string): Gidilecek URL
-- `options` (NavigationOptions, optional): Navigation seçenekleri
+- `url` (string): URL to navigate to
+- `options` (NavigationOptions, optional): Navigation options
 
 **Returns:** `this` (chainable)
 
 #### `reload({ options })`
 
-Sayfayı yeniler.
+Reloads the page.
 
 #### `goBack({ options })`
 
-Browser history'de geri gider.
+Goes back in browser history.
 
 #### `goForward({ options })`
 
-Browser history'de ileri gider.
+Goes forward in browser history.
 
 ### Interaction Methods
 
 #### `click({ selector, options })`
 
-Element'e tıklar.
+Clicks an element.
 
 **Parameters:**
-- `selector` (string): CSS selector
-- `options` (ClickOptions, optional): Click seçenekleri
+- `selector` (string): JSPath or XPath selector for the element.
+- `options` (ClickOptions, optional): Click options
 
 #### `write({ selector, value, options })`
 
-Element'e text yazar.
+Writes text to an element.
 
 **Parameters:**
-- `selector` (string): Input element selector
-- `value` (string): Yazılacak text
-- `options` (Object, optional): Typing seçenekleri
+- `selector` (string): JSPath or XPath selector for the input element.
+- `value` (string): Text to write
+- `options` (Object, optional): Typing options
 
 #### `press({ key, options })`
 
-Klavye tuşuna basar.
+Presses a keyboard key.
 
 **Parameters:**
-- `key` (string): Basılacak tuş (örn: 'Enter', 'Tab')
+- `key` (string): Key to press (e.g., 'Enter', 'Tab')
 - `options` (KeyboardPressOptions, optional)
 
 #### `hover({ selector })`
 
-Element üzerine hover yapar.
+Hovers over an element.
+
+**Parameters:**
+- `selector` (string): JSPath or XPath selector for the element.
 
 #### `focus({ selector })`
 
-Element'e focus yapar.
+Focuses an element.
+
+**Parameters:**
+- `selector` (string): JSPath or XPath selector for the element.
 
 #### `select({ selector, values })`
 
-Select element'inde option seçer.
+Selects options in a select element.
 
 **Parameters:**
-- `selector` (string): Select element selector
-- `values` (string[]): Seçilecek option value'ları
+- `selector` (string): JSPath or XPath selector for the select element.
+- `values` (string[]): Option values to select
 
 #### `clearInput({ selector })`
 
-Input element'ini temizler.
+Clears an input element.
+
+**Parameters:**
+- `selector` (string): JSPath or XPath selector for the input element.
 
 #### `uploadFile({ selector, filePaths })`
 
-File input'a dosya yükler.
+Uploads files to a file input.
 
 **Parameters:**
-- `selector` (string): File input selector
-- `filePaths` (string[]): Yüklenecek dosya path'leri
+- `selector` (string): JSPath or XPath selector for the file input.
+- `filePaths` (string[]): File paths to upload
 
 ### Waiting Methods
 
 #### `waitForSelector({ selector, options })`
 
-Element'in DOM'da görünmesini bekler.
+Waits for an element to appear in the DOM.
+
+**Parameters:**
+- `selector` (string): JSPath or XPath selector for the element.
 
 #### `waitForNavigation({ options })`
 
-Navigation tamamlanmasını bekler.
+Waits for navigation to complete.
 
 #### `waitForFunction({ fn, options, args })`
 
-JavaScript function'ın truthy değer dönmesini bekler.
+Waits for a JavaScript function to return a truthy value.
 
 #### `waitForDomUpdate({ timeout })`
 
-DOM güncellemelerinin tamamlanmasını bekler.
+Waits for DOM updates to complete.
 
 #### `sleep({ duration })`
 
@@ -279,19 +291,16 @@ Cookie'leri siler.
 
 #### `evaluate({ fn, args })`
 
-Browser context'inde JavaScript execute eder.
+Executes JavaScript in browser context.
 
 **Parameters:**
-- `fn` (string): Execute edilecek function string'i
-- `args` (any[], optional): Function argumentları
+- `fn` (string): Function string to execute
+- `args` (any[], optional): Function arguments
 
-#### `getContent()`
-
-Sayfa HTML content'ini getirir.
 
 #### `getBodyContent()`
 
-Body HTML'ini ve interactive element'leri getirir.
+Returns body HTML and interactive elements.
 
 **Returns:** Object with:
 - `content` (string): HTML content
@@ -299,41 +308,50 @@ Body HTML'ini ve interactive element'leri getirir.
 
 #### `getText({ selector })`
 
-Element'in text content'ini getirir.
+Returns the text content of an element.
+
+**Parameters:**
+- `selector` (string): JSPath or XPath selector for the element.
 
 #### `getAttribute({ selector, attribute })`
 
-Element attribute değerini getirir.
+Returns an element's attribute value.
+
+**Parameters:**
+- `selector` (string): JSPath or XPath selector for the element.
 
 #### `getValue({ selector })`
 
-Input element value'sunu getirir.
+Returns an input element's value.
+
+**Parameters:**
+- `selector` (string): JSPath or XPath selector for the input element.
 
 #### `getCookies({ urls })`
 
-Cookie'leri getirir.
+Returns cookies.
 
 #### `getClickableElements()`
 
-Sayfadaki tıklanabilir element'leri getirir.
+Returns clickable elements on the page.
 
 #### `getWriteableElements()`
 
-Sayfadaki yazılabilir element'leri getirir.
+Returns writable elements on the page.
 
 ### Execution
 
 #### `run()`
 
-Kuyruğa alınan tüm action'ları execute eder.
+Executes all queued actions.
 
-**Returns:** `Promise<any>` - Son data extraction/manipulation action'ının sonucu
+**Returns:** `Promise<any>` - Result of the last data extraction/manipulation action
 
 **Example:**
 ```javascript
 const result = await new Puppeteer()
   .go({ url: 'https://example.com' })
-  .waitForSelector({ selector: 'h1' })
+  .waitForSelector({ selector: '//h1' })
   .screenshot({ options: { type: 'png' } })
   .run();
 

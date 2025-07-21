@@ -18,7 +18,7 @@ async function advancedLocalAutomation() {
     console.log('➡️ Navigating to link list page and extracting links...');
     const links = await browser
       .go({ url: 'https://httpbin.org/links/10/0' })
-      .waitForSelector({ selector: 'a' })
+      .waitForSelector({ selector: "a" })
       .evaluate({
         fn: `
           () => {

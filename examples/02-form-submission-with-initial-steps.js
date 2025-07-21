@@ -20,7 +20,7 @@ async function formSubmissionExample() {
   // This guarantees the page is in the correct state for the AI.
   const initial_steps = [
     { type: 'go', value: 'https://httpbin.org/forms/post' },
-    { type: 'waitForSelector', selector: 'form' }
+    { type: 'waitForSelector', selector: "form" }
   ];
 
   const prompt = "Fill the form with the following data: Customer Name: 'Pupi AI', Telephone: '555-123-4567', Email: 'contact@pupi.ai'. Then, select 'Medium' for the size and check the first two toppings. Finally, submit the form.";

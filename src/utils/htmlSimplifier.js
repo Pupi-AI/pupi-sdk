@@ -97,6 +97,9 @@ const htmlSimplifier = {
 
     let stabilized = html;
 
+    // First, apply aggressive simplification for AI processing
+    stabilized = this.simplifyForAI(stabilized);
+
     // Remove problematic dynamic attributes
     const dynamicAttributes = [
       'jsname', 'jsaction', 'jscontroller', 'jsmodel', 'jsdata',
@@ -128,6 +131,79 @@ const htmlSimplifier = {
     }
 
     return stabilized;
+  },
+
+  simplifyForAI(html) {
+    if (!html || typeof html !== 'string') {
+      return '';
+    }
+
+    let simplified = html;
+
+    // Remove everything in head tag completely
+    simplified = simplified.replace(/<head[^>]*>[\s\S]*?<\/head>/gi, '');
+    
+    // Remove all script and style content
+    simplified = simplified.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
+    simplified = simplified.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+    
+    // Remove comments
+    simplified = simplified.replace(/<!--[\s\S]*?-->/g, '');
+    
+    // Remove common non-interactive elements that take up space
+    simplified = simplified.replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '');
+    simplified = simplified.replace(/<img[^>]*>/gi, '');
+    simplified = simplified.replace(/<video[^>]*>[\s\S]*?<\/video>/gi, '');
+    simplified = simplified.replace(/<audio[^>]*>[\s\S]*?<\/audio>/gi, '');
+    simplified = simplified.replace(/<canvas[^>]*>[\s\S]*?<\/canvas>/gi, '');
+    simplified = simplified.replace(/<iframe[^>]*>[\s\S]*?<\/iframe>/gi, '');
+    
+    // Remove hidden elements
+    simplified = simplified.replace(/<[^>]*style[^>]*display\s*:\s*none[^>]*>[\s\S]*?<\/[^>]*>/gi, '');
+    simplified = simplified.replace(/<[^>]*style[^>]*visibility\s*:\s*hidden[^>]*>[\s\S]*?<\/[^>]*>/gi, '');
+    simplified = simplified.replace(/<[^>]*\bhidden\b[^>]*>[\s\S]*?<\/[^>]*>/gi, '');
+    
+    // Remove all attributes except essential ones for element identification
+    const essentialAttrs = ['id', 'class', 'name', 'type', 'value', 'href', 'src', 'alt', 'title', 'placeholder', 'aria-label', 'role', 'data-testid', 'data-test', 'data-cy'];
+    simplified = simplified.replace(/<([^>]+)>/g, (match, tagContent) => {
+      const tagName = tagContent.split(/\s/)[0];
+      const attrs = [];
+      
+      essentialAttrs.forEach(attr => {
+        const attrRegex = new RegExp(`\\s${attr}\\s*=\\s*["']([^"']*)["']`, 'i');
+        const attrMatch = tagContent.match(attrRegex);
+        if (attrMatch) {
+          attrs.push(`${attr}="${attrMatch[1]}"`);
+        }
+      });
+      
+      return `<${tagName}${attrs.length ? ' ' + attrs.join(' ') : ''}>`;
+    });
+    
+    // Remove excessive whitespace and empty lines
+    simplified = simplified.replace(/\s+/g, ' ');
+    simplified = simplified.replace(/>\s+</g, '><');
+    simplified = simplified.replace(/\n\s*\n/g, '\n');
+    
+    // Remove empty elements
+    simplified = simplified.replace(/<([^>]+)>\s*<\/\1>/g, '');
+    
+    // Limit to body content only
+    const bodyMatch = simplified.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+    if (bodyMatch) {
+      simplified = bodyMatch[1];
+    }
+    
+    // Final cleanup - remove very long text nodes that are likely not relevant
+    simplified = simplified.replace(/>([^<]{200,})</g, (match, text) => {
+      // Keep if it contains interactive keywords
+      if (/\b(click|button|link|input|select|submit|login|search|menu|nav)\b/i.test(text)) {
+        return `>${text.substring(0, 100)}...</`;
+      }
+      return '><text-content-truncated/></';
+    });
+    
+    return simplified.trim();
   }
 };
 

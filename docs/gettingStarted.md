@@ -18,7 +18,7 @@ const sdk = new PupiPuppeteerSDK();
 // A simple automation workflow
 const steps = [
   { action: 'navigate', url: 'https://example.com' },
-  { action: 'waitForSelector', selector: 'h1' },
+  { action: 'waitForSelector', selector: '//h1' },
   { action: 'screenshot', options: { type: 'png' } }
 ];
 
@@ -62,8 +62,8 @@ const browser = new Puppeteer({
 const result = await browser
   .go({ url: 'https://httpbin.org/forms/post' })
   .waitForDomUpdate({ timeout: 3000 })
-  .write({ selector: 'input[name="custname"]', value: 'John Doe' })
-  .write({ selector: 'input[name="custemail"]', value: 'john@example.com' })
+  .write({ selector: "//input[@name='custname']", value: 'John Doe' })
+  .write({ selector: "//input[@name='custemail']", value: 'john@example.com' })
   .screenshot({ options: { type: 'png' } })
   .run();
 
@@ -99,7 +99,7 @@ const sdk = new PupiPuppeteerSDK();
 // These tasks will run in parallel, each in a separate browser.
 const googleTask = sdk.executeStepsLocally([
   { action: 'navigate', url: 'https://google.com' },
-  { action: 'getContent' }
+  { action: 'getBodyContent' }
 ]);
 
 const facebookTask = sdk.executeStepsLocally([
@@ -112,7 +112,7 @@ const [googleResult, facebookResult] = await Promise.all([
   facebookTask
 ]);
 
-console.log('Google content length:', googleResult.result.content?.length);
+console.log('Google content length:', googleResult.result.bodyContent?.length);
 console.log('Facebook screenshot taken:', Buffer.isBuffer(facebookResult.result));
 ```
 
@@ -124,7 +124,7 @@ const sdk = new PupiPuppeteerSDK();
 try {
   const steps = [
     { action: 'navigate', url: 'https://example.com' },
-    { action: 'click', selector: '#non-existent-button' } // This will cause an error
+    { action: 'click', selector: "document.getElementById('non-existent-button')" } // This will cause an error
   ];
   
   const { result } = await sdk.executeStepsLocally(steps);
@@ -187,7 +187,7 @@ const result = await browser
 ```javascript
 const scrapingSteps = [
   { action: 'navigate', url: 'https://news-site.com' },
-  { action: 'waitForSelector', selector: '.article-list' },
+  { action: 'waitForSelector', selector: "//div[contains(@class, 'article-list')]" },
   { action: 'evaluate', function: `
     Array.from(document.querySelectorAll('.article')).map(article => ({
       title: article.querySelector('h2')?.textContent?.trim(),
@@ -207,13 +207,13 @@ console.log('Scraped articles:', articles);
 ```javascript
 const formTestSteps = [
   { action: 'navigate', url: 'https://app.com/signup' },
-  { action: 'write', selector: '#email', value: 'test@example.com' },
-  { action: 'write', selector: '#password', value: 'testpass123' },
-  { action: 'click', selector: '#terms-checkbox' },
+  { action: 'write', selector: "document.getElementById('email')", value: 'test@example.com' },
+  { action: 'write', selector: "document.getElementById('password')", value: 'testpass123' },
+  { action: 'click', selector: "document.getElementById('terms-checkbox')" },
   { action: 'screenshot', options: { type: 'png' } }, // Before submit
-  { action: 'click', selector: '#submit' },
-  { action: 'waitForSelector', selector: '.success-message' },
-  { action: 'getText', selector: '.success-message' }
+  { action: 'click', selector: "document.getElementById('submit')" },
+  { action: 'waitForSelector', selector: "//div[contains(@class, 'success-message')]" },
+  { action: 'getText', selector: "//div[contains(@class, 'success-message')]" }
 ];
 
 const { result } = await sdk.executeStepsLocally(formTestSteps);

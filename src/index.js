@@ -43,6 +43,7 @@ const replaceParamsInObject = (target, params) => {
 class PupiPuppeteerSDK {
   constructor(apiBaseUrl = 'https://api.pupiai.com') {
     this.apiClient = new ApiClient(apiBaseUrl);
+    this.localInstanceId = null; // Store the local instance ID for reuse
   }
 
   /**
@@ -55,19 +56,36 @@ class PupiPuppeteerSDK {
 
   /**
    * Executes a series of automation steps locally.
-   * This method creates a browser instance and runs the steps.
-   * The instance remains open until explicitly closed via `closeAllInstances()` or by managing the returned instanceId.
+   * This method reuses the same browser instance across multiple calls.
+   * On first call, it creates a new instance and stores it for future use.
+   * On subsequent calls, it reuses the existing instance.
+   * The instance remains open until explicitly closed via `closeLocalInstance()` or `closeAllInstances()`.
    * @param {Array} steps - Array of step objects to execute.
    * @param {Object} [options={}] - Optional parameters.
    * @param {Object} [options.params={}] - Parameters to replace in step values.
-   * @param {import('puppeteer').LaunchOptions} [options.launchOptions={}] - Puppeteer launch options.
-   * @returns {Promise<{result: any, instanceId: string}>} - An object containing the result of the final step and the ID of the browser instance used.
+   * @param {import('puppeteer').LaunchOptions} [options.launchOptions={}] - Puppeteer launch options (only used on first call).
+   * @param {boolean} [options.forceNewInstance=false] - Force creation of a new instance even if one exists.
+   * @returns {Promise<{result: any, instanceId: string, isNewInstance: boolean}>} - An object containing the result, instance ID, and whether a new instance was created.
    */
   async executeStepsLocally(steps, options = {}) {
-    const { params = {}, launchOptions = {} } = options;
-    const instance = new Puppeteer({ launchOptions });
+    const { params = {}, launchOptions = {}, forceNewInstance = false } = options;
+    let isNewInstance = false;
+    
+    // Check if we need to create a new instance
+    if (!this.localInstanceId || forceNewInstance || !puppeteerManager.get(this.localInstanceId)) {
+      // Create new instance
+      const instance = new Puppeteer({ launchOptions });
+      this.localInstanceId = instance.id;
+      isNewInstance = true;
+      console.log(`🆕 Created new local instance: ${this.localInstanceId}`);
+    } else {
+      console.log(`♻️ Reusing existing local instance: ${this.localInstanceId}`);
+    }
 
     const processedSteps = steps.map(step => replaceParamsInObject(step, params));
+
+    // Create a new Puppeteer instance object to chain the steps
+    const instance = new Puppeteer({ id: this.localInstanceId, launchOptions });
 
     processedSteps.forEach(step => {
       const actionType = step.action || step.type;
@@ -161,9 +179,6 @@ class PupiPuppeteerSDK {
         case 'evaluate':
           instance.evaluate({ fn: step.function || step.value, args: step.args });
           break;
-        case 'getContent':
-          instance.getContent();
-          break;
         case 'getBodyContent':
           instance.getBodyContent();
           break;
@@ -189,6 +204,9 @@ class PupiPuppeteerSDK {
         case 'getWriteableElements':
           instance.getWriteableElements();
           break;
+        case 'detectNonInteractiveItemsWithAI':
+          instance.detectNonInteractiveItemsWithAI({ prompt: step.prompt || step.value });
+          break;
 
         default:
           console.warn(`Unknown step action: ${actionType}`);
@@ -196,7 +214,7 @@ class PupiPuppeteerSDK {
     });
 
     const result = await instance.run();
-    return { result, instanceId: instance.id };
+    return { result, instanceId: this.localInstanceId, isNewInstance };
   }
 
   /**
@@ -270,11 +288,146 @@ class PupiPuppeteerSDK {
   }
 
   /**
+   * Gets a browser instance by ID.
+   * @param {string} instanceId - The ID of the instance to retrieve.
+   * @returns {Object|null} - The instance object with browser, page, and pipeline properties, or null if not found.
+   */
+  getInstance(instanceId) {
+    return puppeteerManager.get(instanceId);
+  }
+
+  /**
+   * Gets all active browser instances.
+   * @returns {Array<{id: string, instance: Object}>} - Array of active instances with their IDs.
+   */
+  getAllInstances() {
+    const instances = [];
+    for (const [id, instance] of puppeteerManager.instances) {
+      instances.push({ id, instance });
+    }
+    return instances;
+  }
+
+  /**
+   * Gets IDs of all active instances.
+   * @returns {Array<string>} - Array of instance IDs.
+   */
+  getActiveInstanceIds() {
+    return Array.from(puppeteerManager.instances.keys());
+  }
+
+  /**
+   * Gets the page object for a specific instance.
+   * @param {string} instanceId - The ID of the instance.
+   * @returns {import('puppeteer').Page|null} - The Puppeteer page object or null if instance not found.
+   */
+  getPage(instanceId) {
+    const instance = puppeteerManager.get(instanceId);
+    return instance ? instance.page : null;
+  }
+
+  /**
+   * Gets the browser object for a specific instance.
+   * @param {string} instanceId - The ID of the instance.
+   * @returns {import('puppeteer').Browser|null} - The Puppeteer browser object or null if instance not found.
+   */
+  getBrowser(instanceId) {
+    const instance = puppeteerManager.get(instanceId);
+    return instance ? instance.browser : null;
+  }
+
+  /**
+   * Executes additional steps on an existing instance.
+   * @param {string} instanceId - The ID of the existing instance.
+   * @param {Array} steps - Array of step objects to execute.
+   * @param {Object} [options={}] - Optional parameters.
+   * @param {Object} [options.params={}] - Parameters to replace in step values.
+   * @returns {Promise<any>} - The result of the final step.
+   */
+  async executeMoreSteps(instanceId, steps, options = {}) {
+    const instance = puppeteerManager.get(instanceId);
+    if (!instance) {
+      throw new Error(`Instance with ID ${instanceId} not found. Make sure the instance is still active.`);
+    }
+
+    const { params = {} } = options;
+    const processedSteps = steps.map(step => replaceParamsInObject(step, params));
+
+    // Convert steps to the action format expected by puppeteerRunner
+    const actions = processedSteps.map(step => {
+      const actionType = step.action || step.type;
+      
+      // Map step properties to payload format
+      const payload = { ...step };
+      delete payload.action;
+      delete payload.type;
+      
+      return {
+        type: actionType,
+        payload: payload
+      };
+    });
+
+    // Use the proper runner for execution
+    return await puppeteerRunner.execute(instance.page, actions, instanceId);
+  }
+
+  /**
+   * Gets the current local instance ID.
+   * @returns {string|null} - The current local instance ID or null if none exists.
+   */
+  getLocalInstanceId() {
+    return this.localInstanceId;
+  }
+
+  /**
+   * Gets the current local instance page.
+   * @returns {import('puppeteer').Page|null} - The Puppeteer page object or null if no local instance exists.
+   */
+  getLocalPage() {
+    return this.localInstanceId ? this.getPage(this.localInstanceId) : null;
+  }
+
+  /**
+   * Gets the current local instance browser.
+   * @returns {import('puppeteer').Browser|null} - The Puppeteer browser object or null if no local instance exists.
+   */
+  getLocalBrowser() {
+    return this.localInstanceId ? this.getBrowser(this.localInstanceId) : null;
+  }
+
+  /**
+   * Closes the current local instance.
+   * @returns {Promise<void>}
+   */
+  async closeLocalInstance() {
+    if (this.localInstanceId) {
+      await puppeteerManager.close(this.localInstanceId);
+      this.localInstanceId = null;
+      console.log('🗑️ Local instance closed and reset');
+    }
+  }
+
+  /**
+   * Closes a specific browser instance by ID.
+   * @param {string} instanceId - The ID of the instance to close.
+   * @returns {Promise<void>}
+   */
+  async closeInstance(instanceId) {
+    await puppeteerManager.close(instanceId);
+    // Reset local instance ID if it was the one being closed
+    if (this.localInstanceId === instanceId) {
+      this.localInstanceId = null;
+    }
+  }
+
+  /**
    * Closes all local browser instances managed by this SDK.
    * @returns {Promise<void>}
    */
   async closeAllInstances() {
     await puppeteerManager.closeAll();
+    this.localInstanceId = null; // Reset local instance ID
   }
 
   /**

@@ -1,18 +1,18 @@
 # Step Actions Reference
 
-Bu dokümanda `executeStepsLocally` fonksiyonunda kullanılabilecek tüm action'lar detaylı olarak açıklanmaktadır.
+This document details all actions that can be used in the `executeStepsLocally` function.
 
 ## Navigation Actions
 
 ### `navigate` / `go`
 
-Belirtilen URL'e gider.
+Navigates to the specified URL.
 
 ```javascript
 {
-  action: 'navigate', // veya 'go'
+  action: 'navigate', // or 'go'
   url: 'https://example.com',
-  options: { // opsiyonel
+  options: { // optional
     waitUntil: 'domcontentloaded',
     timeout: 30000
   }
@@ -21,12 +21,12 @@ Belirtilen URL'e gider.
 
 ### `reload`
 
-Sayfayı yeniler.
+Reloads the page.
 
 ```javascript
 {
   action: 'reload',
-  options: { // opsiyonel
+  options: { // optional
     waitUntil: 'domcontentloaded'
   }
 }
@@ -34,12 +34,12 @@ Sayfayı yeniler.
 
 ### `goBack` / `goForward`
 
-Browser history'de geri/ileri gider.
+Goes back/forward in browser history.
 
 ```javascript
 {
-  action: 'goBack', // veya 'goForward'
-  options: { // opsiyonel
+  action: 'goBack', // or 'goForward'
+  options: { // optional
     waitUntil: 'domcontentloaded'
   }
 }
@@ -49,13 +49,13 @@ Browser history'de geri/ileri gider.
 
 ### `click`
 
-Element'e tıklar.
+Clicks an element.
 
 ```javascript
 {
   action: 'click',
-  selector: '#submit-button',
-  options: { // opsiyonel
+  selector: "document.getElementById('submit-button')", // JSPath or XPath
+  options: { // optional
     button: 'left', // 'left', 'right', 'middle'
     clickCount: 1,
     delay: 0
@@ -65,28 +65,28 @@ Element'e tıklar.
 
 ### `write` / `type`
 
-Text input'a yazar.
+Writes text to input.
 
 ```javascript
 {
-  action: 'write', // veya 'type'
-  selector: '#username',
+  action: 'write', // or 'type'
+  selector: "//input[@id='username']", // JSPath or XPath
   value: 'john@example.com',
-  options: { // opsiyonel
-    delay: 0 // karakterler arası bekleme
+  options: { // optional
+    delay: 0 // delay between characters
   }
 }
 ```
 
 ### `press`
 
-Klavye tuşuna basar.
+Presses a keyboard key.
 
 ```javascript
 {
   action: 'press',
-  key: 'Enter', // 'Tab', 'Escape', 'ArrowDown', vb.
-  options: { // opsiyonel
+  key: 'Enter', // 'Tab', 'Escape', 'ArrowDown', etc.
+  options: { // optional
     delay: 0
   }
 }
@@ -94,57 +94,57 @@ Klavye tuşuna basar.
 
 ### `hover`
 
-Element üzerine hover yapar.
+Hovers over an element.
 
 ```javascript
 {
   action: 'hover',
-  selector: '.menu-item'
+  selector: "//div[contains(@class, 'menu-item')]" // JSPath or XPath
 }
 ```
 
 ### `focus`
 
-Element'e focus yapar.
+Focuses on an element.
 
 ```javascript
 {
   action: 'focus',
-  selector: '#search-input'
+  selector: "document.getElementById('search-input')" // JSPath or XPath
 }
 ```
 
 ### `select`
 
-Select element'inde option seçer.
+Selects an option in a select element.
 
 ```javascript
 {
   action: 'select',
-  selector: '#country',
-  values: ['turkey', 'usa'] // multiple selection desteklenir
+  selector: "//select[@id='country']", // JSPath or XPath
+  values: ['turkey', 'usa'] // multiple selection supported
 }
 ```
 
 ### `clearInput`
 
-Input element'ini temizler.
+Clears an input element.
 
 ```javascript
 {
   action: 'clearInput',
-  selector: '#email'
+  selector: "document.getElementById('email')" // JSPath or XPath
 }
 ```
 
 ### `uploadFile`
 
-File input'a dosya yükler.
+Uploads files to a file input.
 
 ```javascript
 {
   action: 'uploadFile',
-  selector: 'input[type="file"]',
+  selector: "//input[@type='file']", // JSPath or XPath
   filePaths: ['/path/to/file1.jpg', '/path/to/file2.pdf']
 }
 ```
@@ -153,26 +153,26 @@ File input'a dosya yükler.
 
 ### `wait`
 
-Çok amaçlı bekleme action'ı.
+Multi-purpose waiting action.
 
 ```javascript
-// Selector bekleme
+// Selector waiting
 {
   action: 'wait',
-  selector: '.loading',
+  selector: "//div[contains(@class, 'loading')]", // JSPath or XPath
   options: {
     timeout: 10000,
     visible: true
   }
 }
 
-// Süre bekleme
+// Duration waiting
 {
   action: 'wait',
-  duration: 3000 // 3 saniye
+  duration: 3000 // 3 seconds
 }
 
-// Navigation bekleme
+// Navigation waiting
 {
   action: 'wait',
   navigation: true,
@@ -181,7 +181,7 @@ File input'a dosya yükler.
   }
 }
 
-// Function bekleme
+// Function waiting
 {
   action: 'wait',
   function: 'document.readyState === "complete"',
@@ -193,23 +193,23 @@ File input'a dosya yükler.
 
 ### `sleep`
 
-Belirtilen süre bekler.
+Waits for the specified duration.
 
 ```javascript
 {
   action: 'sleep',
-  duration: 2000 // milisaniye
+  duration: 2000 // milliseconds
 }
 ```
 
 ### `waitForSelector`
 
-Element'in DOM'da görünmesini bekler.
+Waits for an element to appear in the DOM.
 
 ```javascript
 {
   action: 'waitForSelector',
-  selector: '.dynamic-content',
+  selector: "//div[contains(@class, 'dynamic-content')]", // JSPath or XPath
   options: {
     visible: true,
     timeout: 15000
@@ -219,7 +219,7 @@ Element'in DOM'da görünmesini bekler.
 
 ### `waitForNavigation`
 
-Navigation tamamlanmasını bekler.
+Waits for navigation to complete.
 
 ```javascript
 {
@@ -233,7 +233,7 @@ Navigation tamamlanmasını bekler.
 
 ### `waitForFunction`
 
-JavaScript function'ın truthy değer dönmesini bekler.
+Waits for a JavaScript function to return a truthy value.
 
 ```javascript
 {
@@ -243,13 +243,13 @@ JavaScript function'ın truthy değer dönmesini bekler.
     timeout: 5000,
     polling: 100
   },
-  args: [] // opsiyonel function argumentları
+  args: [] // optional function arguments
 }
 ```
 
 ### `waitForDomUpdate`
 
-DOM güncellemelerinin tamamlanmasını bekler.
+Waits for DOM updates to complete.
 
 ```javascript
 {
@@ -262,16 +262,16 @@ DOM güncellemelerinin tamamlanmasını bekler.
 
 ### `screenshot`
 
-Screenshot alır.
+Takes a screenshot.
 
 ```javascript
 {
   action: 'screenshot',
   options: {
-    type: 'png', // 'png' veya 'jpeg'
+    type: 'png', // 'png' or 'jpeg'
     fullPage: true,
-    quality: 80, // sadece jpeg için
-    clip: { // opsiyonel crop
+    quality: 80, // for jpeg only
+    clip: { // optional crop
       x: 0,
       y: 0,
       width: 800,
@@ -283,7 +283,7 @@ Screenshot alır.
 
 ### `pdf`
 
-PDF oluşturur.
+Creates a PDF.
 
 ```javascript
 {
@@ -304,7 +304,7 @@ PDF oluşturur.
 
 ### `setViewport`
 
-Browser viewport boyutunu ayarlar.
+Sets browser viewport size.
 
 ```javascript
 {
@@ -320,7 +320,7 @@ Browser viewport boyutunu ayarlar.
 
 ### `setUserAgent`
 
-User agent string'ini ayarlar.
+Sets the user agent string.
 
 ```javascript
 {
@@ -331,7 +331,7 @@ User agent string'ini ayarlar.
 
 ### `setCookies`
 
-Cookie'leri ayarlar.
+Sets cookies.
 
 ```javascript
 {
@@ -351,7 +351,7 @@ Cookie'leri ayarlar.
 
 ### `deleteCookies`
 
-Cookie'leri siler.
+Deletes cookies.
 
 ```javascript
 {
@@ -367,7 +367,7 @@ Cookie'leri siler.
 
 ### `bringToFront`
 
-Browser tab'ını öne getirir.
+Brings the browser tab to the front.
 
 ```javascript
 {
@@ -379,16 +379,16 @@ Browser tab'ını öne getirir.
 
 ### `evaluate`
 
-Browser context'inde JavaScript execute eder.
+Executes JavaScript in the browser context.
 
 ```javascript
 {
   action: 'evaluate',
   function: 'document.title',
-  args: [] // opsiyonel
+  args: [] // optional
 }
 
-// Daha karmaşık örnek
+// More complex example
 {
   action: 'evaluate',
   function: `
@@ -401,19 +401,10 @@ Browser context'inde JavaScript execute eder.
 }
 ```
 
-### `getContent`
-
-Sayfa HTML content'ini getirir.
-
-```javascript
-{
-  action: 'getContent'
-}
-```
 
 ### `getBodyContent`
 
-Body HTML'ini ve interactive element'leri getirir.
+Gets body HTML and interactive elements.
 
 ```javascript
 {
@@ -427,7 +418,7 @@ Body HTML'ini ve interactive element'leri getirir.
   content: '<div>...</div>',
   interactiveElements: [
     {
-      selector: '#button1',
+      selector: "document.getElementById('button1')",
       type: 'clickable',
       tag: 'button',
       text: 'Submit'
@@ -439,52 +430,52 @@ Body HTML'ini ve interactive element'leri getirir.
 
 ### `getText`
 
-Element'in text content'ini getirir.
+Gets the text content of an element.
 
 ```javascript
 {
   action: 'getText',
-  selector: '.page-title'
+  selector: "//h1[contains(@class, 'page-title')]" // JSPath or XPath
 }
 ```
 
 ### `getAttribute`
 
-Element attribute değerini getirir.
+Gets the attribute value of an element.
 
 ```javascript
 {
   action: 'getAttribute',
-  selector: 'img.logo',
+  selector: "//img[contains(@class, 'logo')]", // JSPath or XPath
   attribute: 'src'
 }
 ```
 
 ### `getValue`
 
-Input element value'sunu getirir.
+Gets the value of an input element.
 
 ```javascript
 {
   action: 'getValue',
-  selector: '#search-query'
+  selector: "document.getElementById('search-query')" // JSPath or XPath
 }
 ```
 
 ### `getCookies`
 
-Cookie'leri getirir.
+Gets cookies.
 
 ```javascript
 {
   action: 'getCookies',
-  urls: ['https://example.com'] // opsiyonel, belirtilmezse tüm cookie'ler
+  urls: ['https://example.com'] // optional, if not specified all cookies
 }
 ```
 
 ### `getClickableElements`
 
-Sayfadaki tıklanabilir element'leri getirir.
+Gets clickable elements on the page.
 
 ```javascript
 {
@@ -494,7 +485,7 @@ Sayfadaki tıklanabilir element'leri getirir.
 
 ### `getWriteableElements`
 
-Sayfadaki yazılabilir element'leri getirir.
+Gets writable elements on the page.
 
 ```javascript
 {
@@ -504,20 +495,20 @@ Sayfadaki yazılabilir element'leri getirir.
 
 ## Combination Examples
 
-### Form Doldurma
+### Form Filling
 
 ```javascript
 const formSteps = [
   { action: 'navigate', url: 'https://example.com/form' },
-  { action: 'waitForSelector', selector: '#contact-form' },
-  { action: 'write', selector: '#name', value: 'John Doe' },
-  { action: 'write', selector: '#email', value: 'john@example.com' },
-  { action: 'select', selector: '#country', values: ['turkey'] },
-  { action: 'click', selector: '#terms-checkbox' },
+  { action: 'waitForSelector', selector: "document.getElementById('contact-form')" },
+  { action: 'write', selector: "document.getElementById('name')", value: 'John Doe' },
+  { action: 'write', selector: "document.getElementById('email')", value: 'john@example.com' },
+  { action: 'select', selector: "document.getElementById('country')", values: ['turkey'] },
+  { action: 'click', selector: "document.getElementById('terms-checkbox')" },
   { action: 'screenshot', options: { type: 'png' } },
-  { action: 'click', selector: '#submit' },
+  { action: 'click', selector: "document.getElementById('submit')" },
   { action: 'waitForNavigation' },
-  { action: 'getText', selector: '.success-message' }
+  { action: 'getText', selector: "//div[contains(@class, 'success-message')]" }
 ];
 ```
 
@@ -527,9 +518,9 @@ const formSteps = [
 const scrapingSteps = [
   { action: 'navigate', url: 'https://shop.example.com' },
   { action: 'setViewport', viewport: { width: 1920, height: 1080 } },
-  { action: 'write', selector: '#search', value: 'laptop' },
+  { action: 'write', selector: "document.getElementById('search')", value: 'laptop' },
   { action: 'press', key: 'Enter' },
-  { action: 'waitForSelector', selector: '.product-list' },
+  { action: 'waitForSelector', selector: "//div[contains(@class, 'product-list')]" },
   { action: 'evaluate', function: `
     Array.from(document.querySelectorAll('.product')).map(p => ({
       title: p.querySelector('.title')?.textContent,

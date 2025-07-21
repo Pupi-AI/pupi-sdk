@@ -1,52 +1,115 @@
 import puppeteerManager from "./puppeteerManager.js";
 import { elementDetectorSource } from "../utils/elementDetector.js";
-import htmlSimplifier from "../utils/htmlSimplifier.js";
 
 class PuppeteerRunner {
-  
-  
-  // Validate selector to ensure it's a JSPath selector only
-  validateSelector(selector) {
-    if (!selector || typeof selector !== 'string') return true;
-    
-    // Check for any human-readable attributes - reject them completely
-    const humanReadableAttributes = [
-      'aria-label', 'title', 'alt', 'placeholder', 'data-tooltip', 'data-title', 
-      'aria-describedby', 'aria-description', 'aria-labelledby', 'data-original-title',
-      'tooltip', 'hint', 'help-text', 'description'
-    ];
-    
-    const hasHumanReadableAttribute = humanReadableAttributes.some(attr => 
-      selector.includes(`${attr}=`) || selector.includes(`[${attr}`)
-    );
-    
-    if (hasHumanReadableAttribute) {
-      console.log(`Invalid selector - contains human-readable attributes which are language-dependent: ${selector}`);
-      return false;
+  async _waitForSelector(page, selector, options = {}) {
+    try {
+      // 1. Check for XPath
+      if (selector.startsWith('//') || selector.startsWith('./') || selector.startsWith('(')) {
+        await page.waitForFunction(
+          (xpath) => {
+            const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+            return result.singleNodeValue !== null;
+          },
+          options,
+          selector
+        );
+      } 
+      // 2. Check for JSPath
+      else if (selector.includes('document.')) {
+         await page.waitForFunction(selector, options);
+      }
+      // 3. Assume CSS selector
+      else {
+        await page.waitForSelector(selector, options);
+      }
+    } catch (error) {
+      throw new Error(`waitForSelector failed for selector "${selector}": ${error.message}`);
+    }
+  }
+
+  async _getElementHandle(page, selector) {
+    if (typeof selector !== 'string' || !selector) {
+      throw new Error('Selector must be a non-empty string.');
     }
 
-    // Check for text content in selectors (e.g., contains(), text())
-    const textContentPatterns = [
-      /contains\s*\(/,
-      /text\s*\(/,
-      /:contains\s*\(/,
-      /normalize-space\s*\(/
-    ];
-    
-    const hasTextContent = textContentPatterns.some(pattern => pattern.test(selector));
-    
-    if (hasTextContent) {
-      console.log(`Invalid selector - contains text content which is language-dependent: ${selector}`);
-      return false;
+    if (selector.startsWith('//') || selector.startsWith('./') || selector.startsWith('(')) {
+      try {
+        // Use evaluate to find element with XPath
+        await page.waitForFunction(
+          (xpath) => {
+            const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+            return result.singleNodeValue !== null;
+          },
+          { timeout: 15000 },
+          selector
+        );
+        
+        const element = await page.evaluateHandle(
+          (xpath) => {
+            const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+            return result.singleNodeValue;
+          },
+          selector
+        );
+        
+        const elementHandle = element.asElement();
+        if (!elementHandle) {
+          await element.dispose();
+          throw new Error(`XPath element not found: ${selector}`);
+        }
+        return elementHandle;
+      } catch (e) {
+        throw new Error(`Waiting for XPath selector "${selector}" failed: ${e.message}`);
+      }
     }
-    
-    return true;
+
+    // 2. Check for JSPath
+    if (selector.includes('document.')) {
+        try {
+          await page.waitForFunction(selector, { timeout: 15000 });
+          const handle = await page.evaluateHandle(selector);
+          const element = handle.asElement();
+          if (!element) {
+            await handle.dispose();
+            throw new Error(`JSPath did not resolve to an element: ${selector}`);
+          }
+          return element;
+        } catch (e) {
+          throw new Error(`Waiting for JSPath selector "${selector}" failed: ${e.message}`);
+        }
+    }
+
+    // 3. Assume CSS selector
+    try {
+      await page.waitForSelector(selector, { timeout: 15000 });
+      const element = await page.$(selector);
+      if (!element) {
+        throw new Error(`CSS selector did not resolve to an element: ${selector}`);
+      }
+      return element;
+    } catch (e) {
+      throw new Error(`Waiting for CSS selector "${selector}" failed: ${e.message}`);
+    }
   }
+
   async execute(page, actions, id) {
     console.log(`Puppeteer Runner Started - ${id}`);
     let lastResult = null;
 
     const instance = puppeteerManager.get(id);
+
+    try {
+      console.log(`🔍 Checking page readiness for ${id}...`);
+      const currentUrl = page.url();
+      if (currentUrl === 'about:blank') {
+        console.log(`⚠️  Page is still on about:blank - waiting for navigation...`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+      console.log(`✅ Page ready at: ${page.url()}`);
+    } catch (error) {
+      console.log(`⚠️  Page readiness check failed: ${error.message}`);
+    }
 
     for (const action of actions) {
       let currentUrlBeforeAction;
@@ -56,41 +119,22 @@ class PuppeteerRunner {
         currentUrlBeforeAction = "N/A (page closed or invalid)";
       }
 
+      let handle = null;
+
       try {
         console.log(`Executing action: ${action.type}`, action.payload);
         puppeteerManager.emit('action:start', { sessionId: id, action, currentUrl: currentUrlBeforeAction });
 
         switch (action.type) {
           case "go":
-            try {
+            {
               let initialUrl = action.payload.url;
               if (!initialUrl.startsWith('http://') && !initialUrl.startsWith('https://')) {
                 initialUrl = `https://${initialUrl}`;
-                console.log(`URL auto-corrected: ${action.payload.url} -> ${initialUrl}`);
               }
-              const initialOrigin = new URL(initialUrl).origin
-              await page.browserContext().overridePermissions(initialOrigin, [
-                "microphone",
-                "camera",
-                "notifications",
-              ]);
-              console.log(`Permissions granted for navigated origin: ${initialOrigin}`);
-
-              await page.goto(initialUrl, { 
-                waitUntil: "domcontentloaded", 
-                timeout: 30000,
-                ...(action.payload.options || {}) 
-              });
-
-            } catch (error) {
-              if (error.name === 'TimeoutError') {
-                console.log(`Page load timeout - page may be partially loaded: ${error.message}`);
-              } else if (error.message.includes('Cannot navigate to invalid URL')) {
-                console.log(`Invalid URL error: ${action.payload.url}`);
-                throw error;
-              } else {
-                throw error;
-              }
+              const initialOrigin = new URL(initialUrl).origin;
+              await page.browserContext().overridePermissions(initialOrigin, ["microphone", "camera", "notifications"]);
+              await page.goto(initialUrl, { waitUntil: "domcontentloaded", timeout: 30000, ...(action.payload.options || {}) });
             }
             break;
           case "reload":
@@ -103,154 +147,70 @@ class PuppeteerRunner {
             await page.goForward(action.payload.options);
             break;
 
-          // Clicking and Interacting
           case "click":
-            if (!this.validateSelector(action.payload.selector)) {
-              throw new Error('Invalid selector: contains human-readable text');
-            }
-            try {
-              await page.waitForSelector(action.payload.selector, { timeout: 15000 });
-              await page.click(action.payload.selector, action.payload.options);
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            } catch (error) {
-              if (error.name === 'TimeoutError') {
-                console.log(`Click target not found - selector may not exist: ${action.payload.selector}`);
-                throw error;
-              } else {
-                throw error;
-              }
-            }
+            await this._waitForSelector(page, action.payload.selector, { timeout: 60 * 10000 });
+            handle = await this._getElementHandle(page, action.payload.selector);
+            await handle.click(action.payload.options);
+            await new Promise(resolve => setTimeout(resolve, 1000));
             break;
           case "press":
             await page.keyboard.press(action.payload.key, action.payload.options);
             break;
           case "write":
-            if (!this.validateSelector(action.payload.selector)) {
-              throw new Error('Invalid selector: contains human-readable text');
-            }
-            try {
-              await page.waitForSelector(action.payload.selector, { timeout: 30000 });
-              // Clear the field first
-              await page.focus(action.payload.selector);
-              await page.keyboard.down('Control');
-              await page.keyboard.press('a');
-              await page.keyboard.up('Control');
-              await page.keyboard.press('Backspace');
-              await new Promise(resolve => setTimeout(resolve, 500));
-              await page.type(action.payload.selector, action.payload.value, action.payload.options);
-              await new Promise(resolve => setTimeout(resolve, 500));
-            } catch (error) {
-              if (error.name === 'TimeoutError') {
-                console.log(`Write target not found - selector may not exist: ${action.payload.selector}`);
-                throw error;
-              } else {
-                throw error;
-              }
-            }
+            await this._waitForSelector(page, action.payload.selector, { timeout: 60 * 10000 });
+            handle = await this._getElementHandle(page, action.payload.selector);
+            await handle.focus();
+            await page.keyboard.down('Control');
+            await page.keyboard.press('a');
+            await page.keyboard.up('Control');
+            await page.keyboard.press('Backspace');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            await handle.type(action.payload.value, action.payload.options);
+            await new Promise(resolve => setTimeout(resolve, 500));
             break;
           case "clearInput":
-            if (!this.validateSelector(action.payload.selector)) {
-              throw new Error('Invalid selector: contains human-readable text');
-            }
-            try {
-              await page.waitForSelector(action.payload.selector, { timeout: 15000 });
-              await page.$eval(action.payload.selector, el => el.value = '');
-              await new Promise(resolve => setTimeout(resolve, 300));
-            } catch (error) {
-              if (error.name === 'TimeoutError') {
-                console.log(`Clear input target not found - selector may not exist: ${action.payload.selector}`);
-                throw error;
-              } else {
-                throw error;
-              }
-            }
+            handle = await this._getElementHandle(page, action.payload.selector);
+            await handle.evaluate(el => el.value = '');
+            await new Promise(resolve => setTimeout(resolve, 300));
             break;
           case "hover":
-            if (!this.validateSelector(action.payload.selector)) {
-              throw new Error('Invalid selector: contains human-readable text');
-            }
-            try {
-              await page.waitForSelector(action.payload.selector, { timeout: 15000 });
-              await page.hover(action.payload.selector);
-              await new Promise(resolve => setTimeout(resolve, 300));
-            } catch (error) {
-              if (error.name === 'TimeoutError') {
-                console.log(`Hover target not found - selector may not exist: ${action.payload.selector}`);
-                throw error;
-              } else {
-                throw error;
-              }
-            }
+            handle = await this._getElementHandle(page, action.payload.selector);
+            await handle.hover();
+            await new Promise(resolve => setTimeout(resolve, 300));
             break;
           case "focus":
-            await page.waitForSelector(action.payload.selector);
-            await page.focus(action.payload.selector);
+            handle = await this._getElementHandle(page, action.payload.selector);
+            await handle.focus();
             break;
           case "select":
-            await page.waitForSelector(action.payload.selector);
-            await page.select(action.payload.selector, ...action.payload.values);
+            handle = await this._getElementHandle(page, action.payload.selector);
+            await handle.select(...action.payload.values);
             break;
           case "uploadFile":
-            {
-              await page.waitForSelector(action.payload.selector);
-              const elementHandle = await page.$(action.payload.selector);
-              await elementHandle.uploadFile(...action.payload.filePaths);
-            }
+            handle = await this._getElementHandle(page, action.payload.selector);
+            await handle.uploadFile(...action.payload.filePaths);
             break;
 
-          // Waiting
           case "waitForDomUpdate":
-            try {
-              await page.waitForNetworkIdle({ 
-                idleTime: 1000, 
-                timeout: action.payload.timeout || 30000 
-              });
-            } catch (error) {
-              if (error.name === 'TimeoutError') {
-                console.log(`Network idle timeout - continuing: Waited ${action.payload.timeout || 30000}ms for network idle`);
-              } else {
-                throw error;
-              }
-            }
+            await page.waitForNetworkIdle({ idleTime: 1000, timeout: action.payload.timeout || 30000 }).catch(err => console.log(`Network idle timeout - continuing: ${err.message}`));
             break;
           case "waitForSelector":
-            if (!this.validateSelector(action.payload.selector)) {
-              throw new Error('Invalid selector: contains human-readable text');
-            }
-            await page.waitForSelector(action.payload.selector, action.payload.options);
+            await this._waitForSelector(page, action.payload.selector, action.payload.options || {});
             break;
           case "waitForNavigation":
-            try {
-              await page.waitForNavigation({ 
-                timeout: 10000,
-                waitUntil: 'domcontentloaded',
-                ...(action.payload.options || {})
-              });
-            } catch (error) {
-              if (error.name === 'TimeoutError') {
-                console.log(`Navigation timeout - continuing without waiting: ${error.message}`);
-              } else {
-                throw error;
-              }
-            }
+            await page.waitForNavigation({ timeout: 10000, waitUntil: 'domcontentloaded', ...(action.payload.options || {}) }).catch(err => console.log(`Navigation timeout - continuing: ${err.message}`));
             break;
           case "waitForFunction":
-            // Validate function doesn't contain human-readable text selectors
-            const humanReadableAttributes = ['aria-label', 'title', 'alt', 'placeholder', 'data-tooltip', 'data-title', 'aria-describedby', 'aria-description'];
-            if (action.payload.fn && typeof action.payload.fn === 'string') {
-              const hasHumanReadableText = humanReadableAttributes.some(attr => action.payload.fn.includes(attr));
-              if (hasHumanReadableText) {
-                console.log(`Invalid waitForFunction - human-readable attribute detected: Function contains human-readable attribute which is language-dependent: ${action.payload.fn}`);
-                throw new Error('waitForFunction cannot use human-readable text attributes as they are language-dependent');
-              }
+            {
+              const functionToExecute = action.payload.fn || action.payload.function || action.payload.pageFunction || action.payload.value;
+              if (!functionToExecute) throw new Error('waitForFunction requires a function string.');
+              await page.waitForFunction(functionToExecute, action.payload.options, ...(action.payload.args || []));
             }
-            await page.waitForFunction(action.payload.fn, action.payload.options, ...(action.payload.args || []));
             break;
           case "sleep":
             await new Promise(resolve => setTimeout(resolve, action.payload.duration));
             break;
 
-          // Browser Manipulation
           case "screenshot":
             lastResult = await page.screenshot(action.payload.options);
             break;
@@ -273,96 +233,47 @@ class PuppeteerRunner {
             await page.bringToFront();
             break;
 
-          // Data Extraction
           case "evaluate":
-            lastResult = await page.evaluate(action.payload.fn, ...(action.payload.args || []));
-            break;
-          case "getContent":
-            lastResult = await page.content();
+            {
+              const evaluateFunction = action.payload.fn || action.payload.function || action.payload.pageFunction || action.payload.value;
+              if (!evaluateFunction) throw new Error('evaluate requires a function string.');
+              lastResult = await page.evaluate(evaluateFunction, ...(action.payload.args || []));
+            }
             break;
           case "getBodyContent":
-            try {
-              try {
-                await page.waitForNetworkIdle({ 
-                  idleTime: 2000, 
-                  timeout: 5000 
-                });
-              } catch (timeoutError) {
-                console.log("Network idle timeout during getBodyContent - continuing: Some network requests may still be pending");
-              }
-              
+            {
+              await page.waitForNetworkIdle({ idleTime: 2000, timeout: 5000 }).catch(() => {});
               await new Promise(resolve => setTimeout(resolve, 1500));
               
-              await page.waitForFunction(() => {
-                return document.readyState === 'complete';
-              }, { timeout: 3000 }).catch(() => {
-              });
+              const bodyContent = await page.evaluate(() => document.body ? document.body.innerHTML : '');
               
-              const evaluationResult = await page.evaluate((elementDetectorSource) => {
-                // Get body content with stable selectors
-                const bodyContent = document.body.innerHTML;
-                
-                // Execute the element detector function
-                const elementDetectorFunction = eval(elementDetectorSource);
-                const elements = elementDetectorFunction.filter(el => 
-                  el.type === 'clickable' || el.type === 'writeable'
-                );
-                
-                // Return both content and elements with stable selectors
-                return {
-                  content: bodyContent,
-                  interactiveElements: elements
-                };
-              }, elementDetectorSource);
-              
-              // Process the content with stable selectors
-              const stabilizedContent = htmlSimplifier.replaceWithStableSelectors(
-                evaluationResult.content, 
-                evaluationResult.interactiveElements
-              );
-              
-              lastResult = {
-                content: stabilizedContent,
-                interactiveElements: evaluationResult.interactiveElements,
-                stabilizedHTML: true
-              };
-            } catch (error) {
-              console.log(`getBodyContent failed: Error: ${error.message}`);
-              lastResult = { error: true, message: `Failed to get page content - ${error.message}` };
+              lastResult = { content: bodyContent, stabilizedHTML: true };
             }
             break;
           case "getHtml":
-            await page.waitForSelector(action.payload.selector);
-            lastResult = await page.$eval(action.payload.selector, el => el.innerHTML);
+            handle = await this._getElementHandle(page, action.payload.selector);
+            lastResult = await handle.evaluate(el => el.outerHTML);
             break;
           case "getText":
-            await page.waitForSelector(action.payload.selector);
-            lastResult = await page.$eval(action.payload.selector, el => el.innerText);
+            handle = await this._getElementHandle(page, action.payload.selector);
+            lastResult = await handle.evaluate(el => el.innerText);
             break;
           case "getAttribute":
-            await page.waitForSelector(action.payload.selector);
-            lastResult = await page.$eval(action.payload.selector, (el, attr) => el.getAttribute(attr), action.payload.attribute);
+            handle = await this._getElementHandle(page, action.payload.selector);
+            lastResult = await handle.evaluate((el, attr) => el.getAttribute(attr), action.payload.attribute);
             break;
           case "getValue":
-            await page.waitForSelector(action.payload.selector);
-            lastResult = await page.$eval(action.payload.selector, el => el.value);
+            handle = await this._getElementHandle(page, action.payload.selector);
+            lastResult = await handle.evaluate(el => el.value);
             break;
           case "getCookies":
             lastResult = await page.cookies(...(action.payload.urls || []));
             break;
-
           case "getClickableElements":
           case "getWriteableElements":
             {
-              const allElements = await page.evaluate((elementDetectorSource) => {
-                const elementDetectorFunction = eval(elementDetectorSource);
-                return elementDetectorFunction;
-              }, elementDetectorSource);
-              if (action.type === "getClickableElements") {
-                lastResult = allElements.filter(el => el.type === 'clickable');
-              } else { // getWriteableElements
-                lastResult = allElements.filter(el => el.type === 'writeable');
-              }
+              const allElements = await page.evaluate((source) => eval(source), elementDetectorSource);
+              lastResult = allElements.filter(el => el.type === (action.type === 'getClickableElements' ? 'clickable' : 'writeable'));
             }
             break;
 
@@ -378,6 +289,10 @@ class PuppeteerRunner {
         console.log("Puppeteer Runner Action Error:", { action: action.type, message: error.message });
         puppeteerManager.emit('action:error', { sessionId: id, action, error: { message: error.message, stack: error.stack }, currentUrl: currentUrlBeforeAction });
         throw error;
+      } finally {
+        if (handle) {
+          await handle.dispose();
+        }
       }
     }
     

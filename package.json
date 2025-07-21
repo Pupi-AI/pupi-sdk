@@ -24,7 +24,8 @@
     "node-fetch": "^2.7.0",
     "puppeteer": "^23.1.1",
     "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2"
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
+    "puppeteer-stream": "^3.0.15"
   },
   "devDependencies": {
     "nodemon": "^2.0.15"

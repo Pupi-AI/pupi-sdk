@@ -1,5 +1,6 @@
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
+import { launch } from "puppeteer-stream";
 import { EventEmitter } from "events";
 
 puppeteer.use(StealthPlugin());
@@ -12,17 +13,22 @@ class PuppeteerManager extends EventEmitter {
 
   async create(id, launchOptions = {}, enums = []) {
     if (this.instances.has(id)) {
-      console.log(`Instance ${id} already exists.`);
+      console.log(`⚠️  Instance ${id} already exists - returning existing instance`);
       return this.instances.get(id);
     }
 
-    console.log(`Creating new instance ${id}`);
+    console.log(`🆕 Creating NEW browser instance ${id}`);
+    console.log(`📊 Active instances before creation: ${this.instances.size}`);
+    console.log(`🆔 Active instance IDs: ${Array.from(this.instances.keys()).join(', ')}`);
+    
     const finalLaunchOptions = {
       headless: false,
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
       ...launchOptions,
     };
-    const browser = await puppeteer.launch(finalLaunchOptions);
+    const browser = await launch(finalLaunchOptions);
+    console.log(`🌐 NEW Chrome browser process launched for instance ${id}`);
+    
     const context = browser.defaultBrowserContext();
     const page = await browser.newPage();
     const pipeline = [];
@@ -53,6 +59,7 @@ class PuppeteerManager extends EventEmitter {
     });
 
     this.instances.set(id, instance);
+    console.log(`✅ Instance ${id} created and stored. Total instances now: ${this.instances.size}`);
     return instance;
   }
 
@@ -70,13 +77,16 @@ class PuppeteerManager extends EventEmitter {
 
   async close(id) {
     if (!this.instances.has(id)) {
-      console.log(`Instance ${id} not found for closing.`);
+      console.log(`❌ Instance ${id} not found for closing.`);
       return;
     }
-    console.log(`Closing instance ${id}`);
+    console.log(`🗑️  Closing browser instance ${id}`);
+    console.log(`📊 Active instances before closing: ${this.instances.size}`);
     const { browser } = this.instances.get(id);
     await browser.close();
     this.instances.delete(id);
+    console.log(`✅ Instance ${id} closed and removed. Remaining instances: ${this.instances.size}`);
+    console.log(`🆔 Remaining instance IDs: ${Array.from(this.instances.keys()).join(', ')}`);
   }
 
   async closeAll() {
