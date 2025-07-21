@@ -2,6 +2,7 @@ import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import { launch } from "puppeteer-stream";
 import { EventEmitter } from "events";
+import { executablePath } from "puppeteer"
 
 puppeteer.use(StealthPlugin());
 
@@ -26,6 +27,19 @@ class PuppeteerManager extends EventEmitter {
       args: ["--no-sandbox", "--disable-setuid-sandbox"],
       ...launchOptions,
     };
+    
+    // Auto-detect Chrome executable path if not provided
+    if (!finalLaunchOptions.executablePath) {
+      try {
+        const detectedPath = executablePath();
+        if (detectedPath) {
+          finalLaunchOptions.executablePath = detectedPath;
+          console.log(`✅ Chrome executable detected: ${detectedPath}`);
+        }
+      } catch (e) {
+        console.log('ℹ️ Using Puppeteer default Chrome detection');
+      }
+    }
     const browser = await launch(finalLaunchOptions);
     console.log(`🌐 NEW Chrome browser process launched for instance ${id}`);
     
